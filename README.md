@@ -20,9 +20,9 @@ Or if you must have a binary:
 
 # Testing 
 
-A unit test driver is implemented, to varying degrees of functionality.  In a professional or full time context 100% pass rate here would be a gate to a pull request acceptance:
+A unit test driver is implemented, to varying degrees of thoroughness, and covers the core use cases.  In a professional or full time context 100% pass rate here would be a gate to a pull request acceptance.  A scale larger performance would also be warranted.
 
-    go test
+    go test -v
 
 # Design Notes
 

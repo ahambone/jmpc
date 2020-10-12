@@ -3,6 +3,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +13,15 @@ import (
 	"testing"
 	"time"
 )
+
+type testRequest struct {
+	t         *testing.T
+	clearText string
+}
+
+const numClients = 16
+
+var testRequestChan = make(chan testRequest, numClients)
 
 func init() {
 	go func() {
@@ -116,6 +127,81 @@ func TestSingleHash(t *testing.T) {
 
 	if 0 != strings.Compare(desiredResponse, bodyStrExp) {
 		t.Errorf("Expected a match to [%s], got [%s]", desiredResponse, bodyStrExp)
+	}
+
+}
+
+func doOneRequest(tReq testRequest) {
+
+	t := tReq.t
+	clearText := tReq.clearText
+
+	resp, err := http.PostForm("http://localhost:8080/hash", url.Values{"password": {clearText}})
+	if err != nil {
+		log.Fatal(err)
+		t.Error(err)
+	}
+	defer resp.Body.Close()
+
+	if http.StatusOK != resp.StatusCode {
+		log.Printf("Expected StatusCode [%d], got [%d]", http.StatusOK, resp.StatusCode)
+		t.Errorf("Expected StatusCode [%d], got [%d]", http.StatusOK, resp.StatusCode)
+	}
+
+}
+
+// Note - NOT RFC4122 compliant, thus just generates strings for passwords.
+func pseudoUUID() (uuid string) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return
+	}
+	uuid = fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	return
+}
+
+func TestSeveralCalls(t *testing.T) {
+	var numTests int = 100
+	for i := 0; i < numTests; i++ {
+		tReq := testRequest{t, pseudoUUID()}
+		testRequestChan <- tReq
+		go doOneRequest(<-testRequestChan)
+	}
+}
+
+func TestStats(t *testing.T) {
+
+	resp, err := http.Get("http://localhost:8080/stats")
+	if err != nil {
+		log.Fatal(err)
+		t.Error(err)
+	}
+	defer resp.Body.Close()
+
+	if http.StatusOK != resp.StatusCode {
+		log.Printf("Expected StatusCode [%d], got [%d]", http.StatusOK, resp.StatusCode)
+		t.Errorf("Expected StatusCode [%d], got [%d]", http.StatusOK, resp.StatusCode)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+		t.Error(err)
+	}
+	bodyStr := string(bodyBytes)
+
+	if 0 == len(bodyStr) {
+		t.Errorf("Expected a populated string, got [%s]", bodyStr)
+	}
+
+	if !strings.Contains(bodyStr, "total") {
+		t.Errorf("Expected a string to contain 'total', got [%s]", bodyStr)
+	}
+
+	if !strings.Contains(bodyStr, "average") {
+		t.Errorf("Expected a string to contain 'average', got [%s]", bodyStr)
 	}
 
 }
