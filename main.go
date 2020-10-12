@@ -50,9 +50,6 @@ var resultMap sync.Map
 // The implementation of `sync.Map` does not offer a count, so track it ourselves.
 var resultMapCount uint64 = 0
 
-// Hash a shutdown been requested? Implemented as a uInt for concurrency.
-var shutdownRequested uint32 = 0
-
 // calcHashDelayed processes a hashRequest and keeps track how long it took.
 func calcHashDelayed(hReqCh chan hashRequest) {
 
@@ -138,11 +135,6 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
-
-	// Reject any requests that arrive after shutdown.
-	if 0 < atomic.LoadUint32(&shutdownRequested) {
-
-	}
 
 	// These could share a common lock but this average metric can be fuzzy.
 	totalMicroSecs := atomic.LoadUint64(&timeMetricAccumulator)
