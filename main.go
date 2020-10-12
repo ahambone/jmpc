@@ -87,18 +87,6 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 		duration := nowTime.Sub(startTime)
 		microSecs := uint64(duration.Microseconds())
 		atomic.AddUint64(&timeMetricAccumulator, microSecs)
-		/*
-			// These could share a common lock but this average metric can be fuzzy.
-			totalMicroSecs := atomic.LoadUint64(&timeMetricAccumulator)
-			requestCount := atomic.LoadUint64(&hashRequests)
-			var avgMicroSecs uint64 = 0
-			if 0 != requestCount {
-				avgMicroSecs = totalMicroSecs / requestCount
-			}
-			logMsg := fmt.Sprintf("rest - duration:%v, total:%v, avg:%v\n",
-				microSecs, totalMicroSecs, avgMicroSecs)
-			log.Println(logMsg)
-		*/
 	}(t0)
 
 	err := r.ParseForm()
@@ -106,21 +94,11 @@ func hashHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	// log.Println("r.PostForm", r.PostForm)
-	// log.Println("r.Form", r.Form)
-	// body, err := ioutil.ReadAll(r.Body)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	// _ = body
-	// log.Println("r.Body", string(body))
-
 	// Sanity check to make sure we recieve valid input.
 	clearText := r.PostFormValue("password")
 	if len(clearText) > 0 {
 		idNum := atomic.AddUint64(&hashRequests, 1)
-		fmt.Printf("req %d --> %s \n", idNum, clearText)
+		// fmt.Printf("req %d --> %s \n", idNum, clearText)
 
 		// Enqueue the request to calculate the hash in the future.
 		var hReq = hashRequest{idNum, clearText}

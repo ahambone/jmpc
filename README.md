@@ -1,4 +1,4 @@
-# JumpCloud Interview Assignment
+# A GoLang Interview Assignment
 
 Fun exercise.  
 
