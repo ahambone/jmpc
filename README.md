@@ -20,7 +20,7 @@ Or if you must have a binary:
 
 # Testing 
 
-A unit test driver is implemented:
+A unit test driver is implemented, to varying degrees of functionality.  In a professional or full time context 100% pass rate here would be a gate to a pull request acceptance:
 
     go test
 
